@@ -5,6 +5,12 @@ const redis = require('redis')
  
 // create express application instance
 const app = express()
+
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+  });
  
 // create and connect redis client to local instance.
 const client = redis.createClient(6379)
@@ -14,6 +20,9 @@ client.on('error', (err) => {
     console.log("Error " + err)
 });
  
+const headers = {
+    'access-control-allow-origin': '*'
+}
 // get photos list
 app.get('/loc', (req, res) => {
  
