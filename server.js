@@ -2,12 +2,10 @@
 const express = require('express')
 const fetch = require("node-fetch");
 const redis = require('redis')
- 
-// create express application instance
 const app = express()
 
 app.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
+    res.header("Access-Control-Allow-Origin", "*"); 
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
   });
@@ -15,48 +13,46 @@ app.use(function(req, res, next) {
 // create and connect redis client to local instance.
 const client = redis.createClient(6379)
  
-// echo redis errors to the console
+// log redis errors to the console
 client.on('error', (err) => {
     console.log("Error " + err)
 });
  
-const headers = {
-    'access-control-allow-origin': '*'
-}
-// get photos list
+// get weather data
 app.get('/loc', (req, res) => {
  
-    // key to store results in Redis store
+    // create key to store results in Redis cache
     const redisKey = `${req.query.lat}:${req.query.lon}`;
  
-    // Try fetching the result from Redis first in case we have it cached
-    return client.get(redisKey, (err, temp) => {
+    // Return the data from either the cache or make a call to the API
+    return client.get(redisKey, (err, data) => {
  
         // If that key exists in Redis store
-        if (temp) {
+        if (data) {
             console.log(`Key: '${redisKey}' found in cache!`)
-            return res.json({ source: 'cache', temperature: JSON.parse(temp) })
+            const cacheData = JSON.parse(data)
+            return res.json({ source: 'cache', temperature: cacheData.temperature, conditions: cacheData.conditions })
  
-        } else { // Key does not exist in Redis store
+        } else { // Key does not exist in Redis cache
             console.log(`Key: '${redisKey}' not found, calling API`)
             let url = `https://api.darksky.net/forecast/1ca8170494e1aadb70bfda628ce618d4/${req.query.lat},${req.query.lon}`
-            // Fetch directly from remote api
+            // Fetch from remote api
             fetch(url, {method: 'GET'})
                 .then((response) => {
                     return response.json()
                 })
                 .then((data) => {
-                    // Save the  API response in Redis store,  data expire time in 3600 seconds, it means one hour
-                    client.setex(redisKey, 30, JSON.stringify(data.currently.temperature))
+                    // Save the  API response in Redis cache and set the expire time in seconds
+                    client.setex(redisKey, 30, JSON.stringify({temperature: data.currently.temperature, conditions: data.currently.summary}))
  
                     // Send JSON response to client
-                    return res.json({ source: 'api', temperature: data.currently.temperature })
+                    return res.json({ source: 'api', temperature: data.currently.temperature, conditions: data.currently.summary })
  
                 })
                 .catch(error => {
                     // log error message
                     console.log(error)
-                    // send error to the client 
+                    // send error value
                     return res.json(error.toString())
                 })
         }
