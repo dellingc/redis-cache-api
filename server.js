@@ -4,6 +4,8 @@ const fetch = require("node-fetch");
 const redis = require('redis')
 const app = express()
 
+const PORT = process.env.PORT || 3000
+
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*"); 
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -60,6 +62,6 @@ app.get('/loc', (req, res) => {
 });
  
 // start express server at 3000 port
-app.listen(3000, () => {
+app.listen(PORT, () => {
     console.log('Server listening on port: ', 3000)
 });
