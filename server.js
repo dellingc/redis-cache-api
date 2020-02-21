@@ -7,8 +7,9 @@ const app = express()
 const PORT = process.env.PORT || 3000
 
 app.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*"); 
+    res.header("Access-Control-Allow-Origin", "https://dellinco-wxapp.netlify.com"); 
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Vary: origin");
     next();
   });
  
@@ -45,7 +46,7 @@ app.get('/loc', (req, res) => {
                 })
                 .then((data) => {
                     // Save the  API response in Redis cache and set the expire time in seconds
-                    client.setex(redisKey, 30, JSON.stringify({temperature: data.currently.temperature, conditions: data.currently.summary}))
+                    client.setex(redisKey, 600, JSON.stringify({temperature: data.currently.temperature, conditions: data.currently.summary}))
  
                     // Send JSON response to client
                     return res.json({ source: 'api', temperature: data.currently.temperature, conditions: data.currently.summary })
