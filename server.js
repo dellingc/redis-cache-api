@@ -63,5 +63,5 @@ app.get('/loc', (req, res) => {
  
 // start express server at 3000 port
 app.listen(PORT, () => {
-    console.log('Server listening on port: ', 3000)
+    console.log('Server listening on port: ', PORT)
 });
