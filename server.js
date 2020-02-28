@@ -28,7 +28,8 @@ app.get('/loc', (req, res) => {
     const redisKey = `${req.query.lat}:${req.query.lon}`;
  
     // Return the data from either the cache or make a call to the API
-    return client.get(redisKey, (err, data) => {
+    if(client) {
+        return client.get(redisKey, (err, data) => {
  
         // If that key exists in Redis store
         if (data) {
@@ -60,6 +61,27 @@ app.get('/loc', (req, res) => {
                 })
         }
     });
+    } else {
+        return fetch(url, {method: 'GET'})
+                .then((response) => {
+                    return response.json()
+                })
+                .then((data) => {
+                    // Save the  API response in Redis cache and set the expire time in seconds
+                    client.setex(redisKey, 600, JSON.stringify({temperature: data.currently.temperature, conditions: data.currently.summary}))
+ 
+                    // Send JSON response to client
+                    return res.json({ source: 'api', temperature: data.currently.temperature, conditions: data.currently.summary })
+ 
+                })
+                .catch(error => {
+                    // log error message
+                    console.log(error)
+                    // send error value
+                    return res.json(error.toString())
+                })
+    }
+    
 });
  
 // start express server at 3000 port
