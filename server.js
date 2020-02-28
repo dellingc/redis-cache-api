@@ -62,6 +62,7 @@ app.get('/loc', (req, res) => {
         }
     });
     } else {
+        let url = `https://api.darksky.net/forecast/1ca8170494e1aadb70bfda628ce618d4/${req.query.lat},${req.query.lon}`
         return fetch(url, {method: 'GET'})
                 .then((response) => {
                     return response.json()
