@@ -16,6 +16,9 @@ app.use(function(req, res, next) {
 //process.env.REDIS_URL
 const client = redis.createClient(process.env.REDIS_URL,{
     retry_strategy: function(options) {
+        if (options.total_retry_time > 5000) {
+            return new Error('Retry time exhausted')
+        }
         if (options.attempt > 5) {
             // End reconnecting with built in error
             return new Error('Max number of attempts reached');
