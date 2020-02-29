@@ -14,7 +14,7 @@ app.use(function(req, res, next) {
 
 //Heroku redis instance port  
 //process.env.REDIS_URL
-const client = redis.createClient(1234,{
+const client = redis.createClient('redis://h:p2ae5acd6fba307b7a463991ae54e8aa369dfea59f43f2c307541e9316bd9be01@ec2-18-215-211-2.compute-1.amazonaws.com:22929!',{
     retry_strategy: function(options) {
         if (options.total_retry_time > 5000) {
             return new Error('Retry time exhausted')
