@@ -13,7 +13,7 @@ app.use(function(req, res, next) {
   });
  
 
-const client = redis.createClient(REDIS_URL)
+const client = redis.createClient(process.env.REDIS_URL)
 
 // Log redis errors to the console
 client.on('error', (err) => {
