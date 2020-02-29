@@ -14,7 +14,7 @@ app.use(function(req, res, next) {
 
 //Heroku redis instance port  
 //process.env.REDIS_URL
-const client = redis.createClient(process.env.REDIS_URL{
+const client = redis.createClient(process.env.REDIS_URL,{
     retry_strategy: function(options) {
         if (options.attempt > 5) {
             // End reconnecting with built in error
