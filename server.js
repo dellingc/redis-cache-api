@@ -14,28 +14,26 @@ app.use(function(req, res, next) {
 
 //Heroku redis instance port  
 const redis_url = process.env.REDIS_URL
-const client = redis.createClient(redis_url,{
+
+const client = redis.createClient(process.env.REDIS_URL, {
     retry_strategy: function(options) {
-        if (options.total_retry_time > 5000) {
-            return new Error('Retry time exhausted')
-        }
-        if (options.attempt > 5) {
-            // End reconnecting with built in error
-            return new Error('Max number of attempts reached');
+        if(options.attempt > 5) {
+            console.log('Max attempts')
+            return new Error('Max number of retry attempts reached')
         }
         if (options.error && options.error.code === "ECONNREFUSED") {
-          // End reconnecting on a specific error and flush all commands with
-          // a individual error
-          //return new Error("The server refused the connection");
           console.log(options.error.code + ' - attempt - ' + options.attempt)
           return new Error('The server refused the connection')
         } 
+        return 1000
     },
-})
+});
+
 
 // Log redis errors to the console
 client.on('error', (err) => {
     console.log("Error " + err + ' - code -> ' + err.code)
+    client.connected = false
 });
 
 const apiFetchRedis = (url, client, redisKey, res) => {
