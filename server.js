@@ -3,10 +3,10 @@ const fetch = require("node-fetch");
 const redis = require('redis')
 const app = express()
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 8000
 
 app.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "https://dellinco-wxapp.netlify.com"); 
+    res.header("Access-Control-Allow-Origin", "*"); 
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     res.header("Vary: origin");
     next();
@@ -15,7 +15,7 @@ app.use(function(req, res, next) {
 //Heroku redis instance port  
 const redis_url = process.env.REDIS_URL
 
-const client = redis.createClient(process.env.REDIS_URL, {
+const client = redis.createClient(234, {
     retry_strategy: function(options) {
         if(options.attempt > 5) {
             console.log('Max attempts')
@@ -66,7 +66,7 @@ const apiFetch = (url, res) => {
                 })
                 .then((data) => {
                     // Send JSON response to client
-                    return res.json({ source: 'api', temperature: data.currently.temperature, conditions: data.currently.summary })
+                    return res.json({ source: 'api', current: data.currently, daily: data.daily })
  
                 })
                 .catch(error => {
@@ -79,7 +79,7 @@ const apiFetch = (url, res) => {
 
 
 app.get('/loc', (req, res) => {
-    let url = `https://api.darksky.net/forecast/1ca8170494e1aadb70bfda628ce618d4/${req.query.lat},${req.query.lon}`
+    let url = `https://api.darksky.net/forecast/1ca8170494e1aadb70bfda628ce618d4/${req.query.lat},${req.query.lon}?exclude=[minutely,hourly]`
     const redisKey = `${req.query.lat}:${req.query.lon}`;
     if(client.connected){
         
