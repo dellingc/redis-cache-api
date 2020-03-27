@@ -15,7 +15,7 @@ app.use(function(req, res, next) {
 //Heroku redis instance port  
 const redis_url = process.env.REDIS_URL
 
-const client = redis.createClient(234, {
+const client = redis.createClient(6379, {
     retry_strategy: function(options) {
         if(options.attempt > 5) {
             console.log('Max attempts')
@@ -44,11 +44,11 @@ const apiFetchRedis = (url, client, redisKey, res) => {
                 .then((data) => {
                     // Save the  API response in Redis cache and set the expire time in seconds
                     if (client.connected){
-                       client.setex(redisKey, 600, JSON.stringify({temperature: data.currently.temperature, conditions: data.currently.summary})) 
+                       client.setex(redisKey, 600, JSON.stringify({current: data.currently, daily: data.daily})) 
                     }
                     
                     // Send JSON response to client
-                    return res.json({ source: 'api', temperature: data.currently.temperature, conditions: data.currently.summary })
+                    return res.json({ source: 'api', current: data.currently, daily: data.daily })
  
                 })
                 .catch(error => {
@@ -89,7 +89,7 @@ app.get('/loc', (req, res) => {
             if (data) {
                 console.log(`Key: '${redisKey}' found in cache!`)
                 const cacheData = JSON.parse(data)
-                return res.json({ source: 'cache', temperature: cacheData.temperature, conditions: cacheData.conditions })
+                return res.json({ source: 'cache', current: cacheData.current, daily: cacheData.daily })
      
             } else {
                 console.log(`Location ${req.query.lat}:${req.query.lon} not in cache, calling API`)
