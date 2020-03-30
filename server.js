@@ -44,11 +44,11 @@ const apiFetchRedis = (url, client, redisKey, res) => {
                 .then((data) => {
                     // Save the  API response in Redis cache and set the expire time in seconds
                     if (client.connected){
-                       client.setex(redisKey, 600, JSON.stringify({current: data.currently, daily: data.daily})) 
+                       client.setex(redisKey, 600, JSON.stringify({timezone: data.timezone, current: data.currently, daily: data.daily})) 
                     }
                     
                     // Send JSON response to client
-                    return res.json({ source: 'api', current: data.currently, daily: data.daily })
+                    return res.json({ source: 'api', timezone: data.timezone, current: data.currently, daily: data.daily })
  
                 })
                 .catch(error => {
@@ -66,7 +66,7 @@ const apiFetch = (url, res) => {
                 })
                 .then((data) => {
                     // Send JSON response to client
-                    return res.json({ source: 'api', current: data.currently, daily: data.daily })
+                    return res.json({ source: 'api', timezone: data.timezone, current: data.currently, daily: data.daily })
  
                 })
                 .catch(error => {
@@ -89,7 +89,7 @@ app.get('/loc', (req, res) => {
             if (data) {
                 console.log(`Key: '${redisKey}' found in cache!`)
                 const cacheData = JSON.parse(data)
-                return res.json({ source: 'cache', current: cacheData.current, daily: cacheData.daily })
+                return res.json({ source: 'cache', timezone: cacheData.timezone, current: cacheData.current, daily: cacheData.daily })
      
             } else {
                 console.log(`Location ${req.query.lat}:${req.query.lon} not in cache, calling API`)
