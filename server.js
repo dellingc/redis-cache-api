@@ -31,13 +31,14 @@ const client = redis.createClient(process.env.REDIS_URL, {
 });
 
 client.on('connect', () => {
-    console.log('Redis connected')
+    console.log(`Redis connection = ${client.connected}`);
 })
 
 // Log redis errors to the console
 client.on('error', (err) => {
     console.log("Error " + err + ' - code -> ' + err.code)
-    client.connected = false
+    console.log(`Redis connection = ${client.connected}`)
+    //client.connected = false
 });
 
 // Function to store the API response values in the Redis cache if Redis successfully connects
