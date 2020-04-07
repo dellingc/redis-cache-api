@@ -36,6 +36,7 @@ client.on('error', (err) => {
     client.connected = false
 });
 
+// Function to store the API response values in the Redis cache if Redis successfully connects
 const apiFetchRedis = (url, client, redisKey, res) => {
     fetch(url, {method: 'GET'})
                 .then((response) => {
@@ -59,6 +60,7 @@ const apiFetchRedis = (url, client, redisKey, res) => {
                 })
 }
 
+// Function to only call the API if Redis is not connected
 const apiFetch = (url, res) => {
     fetch(url, {method: 'GET'})
                 .then((response) => {
@@ -79,24 +81,23 @@ const apiFetch = (url, res) => {
 
 
 app.get('/loc', (req, res) => {
+    // URL for Dark Sky endpoint, excludes minutely and hourly forecast data
     let url = `https://api.darksky.net/forecast/1ca8170494e1aadb70bfda628ce618d4/${req.query.lat},${req.query.lon}?exclude=[minutely,hourly]`
     const redisKey = `${req.query.lat}:${req.query.lon}`;
-    if(client.connected){
-        
+    // If the redis client is connected, first check the cache for the data
+    // If the data is not in the cache, use the apiFetchRedis() function to call the Dark Sky API and then cache the data
+    if(client.connected){ 
         return client.get(redisKey, (err, data) => {
- 
-            // If that key exists in Redis store
-            if (data) {
+            if (data) { // If that key exists in Redis store return that data to the client
                 console.log(`Key: '${redisKey}' found in cache!`)
                 const cacheData = JSON.parse(data)
                 return res.json({ source: 'cache', timezone: cacheData.timezone, current: cacheData.current, daily: cacheData.daily })
-     
-            } else {
+            } else { // If data not in cache, call the Dark Sky API
                 console.log(`Location ${req.query.lat}:${req.query.lon} not in cache, calling API`)
                 apiFetchRedis(url, client, redisKey, res)
             }
         })
-    } else {
+    } else { //If redis client is not connected use apiFetch() to go straight to the Dark Sky API and not attempt caching
         console.log(`Redis not connected calling api => ${req.query.lat}:${req.query.lon}`)
         apiFetch(url, res)
     }
