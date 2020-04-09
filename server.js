@@ -2,6 +2,7 @@ const express = require('express')
 const fetch = require("node-fetch");
 const redis = require('redis')
 const app = express()
+const mysql = require('mysql');
 
 const PORT = process.env.PORT || 8000
 
@@ -13,46 +14,36 @@ app.use(function(req, res, next) {
     next();
   });
 
-//Heroku redis instance port  
-const redis_url = process.env.REDIS_URL
-const localRedis = 6379;
 
-const client = redis.createClient(localRedis, {
-    retry_strategy: function(options) {
-        if(options.attempt > 5) {
-            console.log('Max attempts')
-            return new Error('Max number of retry attempts reached')
-        }
-        if (options.error && options.error.code === "ECONNREFUSED") {
-          console.log(options.error.code + ' - attempt - ' + options.attempt)
-          return new Error('The server refused the connection')
-        } 
-        return 1000
-    },
-});
-
-client.on('connect', () => {
-    console.log(`Redis connection = ${client.connected}`);
+weatherDB = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: 'root',
+    database: 'mysql'
 })
 
-// Log redis errors to the console
-client.on('error', (err) => {
-    console.log("Error " + err + ' - code -> ' + err.code)
-    console.log(`Redis connection = ${client.connected}`)
-    //client.connected = false
-});
+weatherDB.connect((err) => {
+    if(err){
+        console.log('Error: ' + err)
+    } else {
+        console.log('connected')
+    }
+})
 
 // Function to store the API response values in the Redis cache if Redis successfully connects
-const apiFetchRedis = (url, client, redisKey, res) => {
+const apiFetchRedis = (redisKey, url, res) => {
     fetch(url, {method: 'GET'})
                 .then((response) => {
                     return response.json()
                 })
                 .then((data) => {
-                    // Save the  API response in Redis cache and set the expire time in seconds
-                    if (client.connected){
-                       client.setex(redisKey, 600, JSON.stringify({timezone: data.timezone, current: data.currently, daily: data.daily})) 
-                    }
+                    weatherDB.query(`insert into weather (rediskey, timezone, current, daily) values('${redisKey}', '${data.timezone.toString()}', '${JSON.stringify(data.currently)}', '${JSON.stringify(data.daily)}')`, function(err, resp){
+                        if(err){
+                            console.log(err)
+                        } else {
+                            console.log(resp)
+                        }
+                    })
                     
                     // Send JSON response to client
                     return res.json({ source: 'api', timezone: data.timezone, current: data.currently, daily: data.daily })
@@ -85,30 +76,29 @@ const apiFetch = (url, res) => {
                 })
 }
 
+function getDBData(key, url, res) {
+    weatherDB.query(`select timezone, current, daily from weather where rediskey = '${key}'`, function(err, resp){
+        if(err){
+            console.log(err)
+        } else if(resp[0] == undefined) {
+            console.log('key not in db')
+            apiFetchRedis(key, url, res)
+        } else {
+            console.log(`Key ${key} found in DB returning cached results`)
+            return res.json({timezone: resp[0].timezone, current: JSON.parse(resp[0].current), daily: JSON.parse(resp[0].daily)})
+ 
+        }
+    } )
+}
+
 
 app.get('/loc', (req, res) => {
-    // URL for Dark Sky endpoint, excludes minutely and hourly forecast data
     let url = `https://api.darksky.net/forecast/1ca8170494e1aadb70bfda628ce618d4/${req.query.lat},${req.query.lon}?exclude=[minutely,hourly]`
     const redisKey = `${req.query.lat}:${req.query.lon}`;
-    // If the redis client is connected, first check the cache for the data
-    // If the data is not in the cache, use the apiFetchRedis() function to call the Dark Sky API and then cache the data
-    if(client.connected){ 
-        return client.get(redisKey, (err, data) => {
-            if (data) { // If that key exists in Redis store return that data to the client
-                console.log(`Key: '${redisKey}' found in cache!`)
-                const cacheData = JSON.parse(data)
-                return res.json({ source: 'cache', timezone: cacheData.timezone, current: cacheData.current, daily: cacheData.daily })
-            } else { // If data not in cache, call the Dark Sky API
-                console.log(`Location ${req.query.lat}:${req.query.lon} not in cache, calling API`)
-                apiFetchRedis(url, client, redisKey, res)
-            }
-        })
-    } else { //If redis client is not connected use apiFetch() to go straight to the Dark Sky API and not attempt caching
-        console.log(`Redis not connected calling api => ${req.query.lat}:${req.query.lon}`)
-        apiFetch(url, res)
-    }
+    //checkDBKey(redisKey)
+    getDBData(redisKey, url, res)
+    //apiFetchRedis(url, redisKey, res)
 })
-
 
 app.listen(PORT, () => {
     console.log('Server listening on port: ', PORT)

@@ -12,7 +12,9 @@
   "dependencies": {
     "async-redis": "^1.1.7",
     "express": "^4.17.1",
+    "mysql": "^2.18.1",
     "node-fetch": "^2.6.0",
+    "node-mysql": "^0.4.2",
     "redis": "^3.0.2"
   }
 }
