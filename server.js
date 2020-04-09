@@ -6,8 +6,8 @@ const app = express()
 const PORT = process.env.PORT || 8000
 
 app.use(function(req, res, next) {
-    //res.header("Access-Control-Allow-Origin", "http://localhost:3000");
-    res.header("Access-Control-Allow-Origin", "https://dellincoinc-wxapp.netlify.com"); 
+    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+    //res.header("Access-Control-Allow-Origin", "https://dellincoinc-wxapp.netlify.com"); 
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     res.header("Vary: origin");
     next();
@@ -15,8 +15,9 @@ app.use(function(req, res, next) {
 
 //Heroku redis instance port  
 const redis_url = process.env.REDIS_URL
+const localRedis = 6379;
 
-const client = redis.createClient(process.env.REDIS_URL, {
+const client = redis.createClient(localRedis, {
     retry_strategy: function(options) {
         if(options.attempt > 5) {
             console.log('Max attempts')
