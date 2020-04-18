@@ -17,7 +17,7 @@ app.use(function(req, res, next) {
 const redis_url = process.env.REDIS_URL
 const localRedis = 6379;
 
-const client = redis.createClient(localRedis, {
+const client = redis.createClient(redis_url, {
     retry_strategy: function(options) {
         if(options.attempt > 5) {
             console.log('Max attempts')
