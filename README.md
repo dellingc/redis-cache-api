@@ -1,5 +1,4 @@
-
-##Weather API
+## Weather API
 
 This API is used in conjuction with the [Dark Sky React App](https://github.com/dellingc/dark-sky-react-app). 
 
