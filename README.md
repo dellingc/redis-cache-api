@@ -24,7 +24,7 @@ Verify that the server is running:
 
 A message will be printed to the terminal that the server is listening on port 8000  
 Open your local browser and try accessing:  
-    http://localhost:8000/loc  
+    http://localhost:8000/loc?lat=37.5260&lon=-77.4416  
     
 Return to [Weather React App](https://github.com/dellingc/weather-react-app) and follow README instructions to install and run the app.
 
